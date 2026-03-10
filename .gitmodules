@@ -1,0 +1,3 @@
+[submodule "NaviSlimPytorchFI"]
+	path = NaviSlimPytorchFI
+	url = https://github.com/GiuseppeEsposito98/NaviSlimPytorchFI.git

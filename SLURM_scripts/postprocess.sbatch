@@ -30,7 +30,8 @@ commit="41293c68fe7e15560d26ba8fa6c1bf377a7df4fd"
 
 Sim_dir=${global_PWD}/${DIR}
 
-python NaviAPPFI/analysis/merge_states_41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.py --fsim_log ${Sim_dir} --target_lyr ${lyr}
+python ${global_PWD}/map_tool_box/AirSimNNaviFI/bash/postprocess.sh --fsim_log ${Sim_dir} --target_lyr ${lyr}
+
 
 echo
 echo "All done. Checking results:"

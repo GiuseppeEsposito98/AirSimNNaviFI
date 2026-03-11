@@ -27,8 +27,9 @@ job_id=0
 DIR="$1"
 lyr="$2"
 trials="$3"
+hardening="$4"
 
-Sim_dir=${global_PWD}/${DIR}/JOBID${job_id}_W${lyr}/
+Sim_dir=${global_PWD}/${DIR}_${hardening}/JOBID${job_id}_N${lyr}/
 
 mkdir -p ${Sim_dir}
 cd ${Sim_dir}
@@ -43,5 +44,6 @@ python3 ${global_PWD}/map_tool_box/AirSimNNaviFI/Fault_simulations/dqn_NBER_lyr.
     --target_layer $lyr \
     --trials $trials \
     --fsim_log_name ${Sim_dir} \
+    --hardening ${hardening}
     
 python ${global_PWD}/map_tool_box/AirSimNNaviFI/analysis/postprocess.py --fsim_log ${Sim_dir} --target_lyr ${lyr}

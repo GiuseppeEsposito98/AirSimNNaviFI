@@ -224,7 +224,7 @@ def evaluate_sim(sim, golden_path_length_per_ep_tot=None, golden_sim=None, fault
 
 def main(args):
 
-    root_path = f'{args.fsim_log}/JOBID_N{args.target_lyr}'
+    root_path = f'{args.fsim_log}'
     file_name = 'evaluation__test.p'
     idx = 0
     csv_file = f'{root_path}/summary.csv'

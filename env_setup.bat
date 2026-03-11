@@ -131,3 +131,4 @@ python3 -m pip install --upgrade webencodings==0.5.1
 python3 -m pip install --upgrade websocket-client==1.8.0
 python3 -m pip install --upgrade wheel==0.44.0
 python3 -m pip install --upgrade widgetsnbextension==4.0.13
+python3 -m pip install --upgrade tqdm

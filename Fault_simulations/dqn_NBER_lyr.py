@@ -26,7 +26,7 @@ def get_argparse():
     parser.add_argument('--target_layer', help='The layer that the simulation has to target')
     parser.add_argument('--trials', help='Number of FI trials to run')
     parser.add_argument('--fsim_log_name', required=True, help='Directory name where the results are stored')
-    parser.add_argument('--hardening', default='', help='Name of the hardening Technique to implement')
+    parser.add_argument('--hardening', default=None, required=False, help='Name of the hardening Technique to implement')
     parser.add_argument('--paths_number', default=5, help='Number of paths to evaluate on (if not specified will evaluate on 5 paths per difficulty level)')
     parser.add_argument('--difficulties', default=None, help='Difficulty levels as a list (if not specified will evaluate on representative difficulty levels)')
     return parser
@@ -79,7 +79,7 @@ def main(args):
         
         if hardening:
             backup_dir=f"{Utils.get_global('repository_directory')}/AirSimNNaviFI/backup/{hardening}"
-            Path(backup_dir).mkdir(exist_ok=True)
+            Path(backup_dir).mkdir(parents=True, exist_ok=True)
 
         if hardening == 'Ranger':
             from map_tool_box.AirSimNNaviFI.Hardening.Ranger import implement_ranger

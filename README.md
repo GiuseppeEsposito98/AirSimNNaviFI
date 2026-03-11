@@ -78,7 +78,7 @@ To run the fault injection campaign:
 - Targeting the first layer of the Neural Network
 - Executing 10 trial per injected fault
 
-### Subsection 1: Run on a SLURM-based HPC system
+### Subsection 2: Run on a SLURM-based HPC system
 
 1. Activate the conda environment
 ```bash

@@ -14,101 +14,80 @@ bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
 rm ~/miniconda3/miniconda.sh
 ```
 
-### Subsection 1: Setup that requires Airsim support
-1. Download the NaviSlim Repo
+### Subsection 1: Setup the repositories tree
+1. Clone the NaviSlim Repo
 ```bash
-git clone https://github.com/WreckItTim/rl_drone.git
+git clone https://github.com/WreckItTim/map_tool_box.git
 ```
 
-2. Follow the steps provided in the README.md file in NaviSlim repo from step 2 on..
-
-3. Once you have successfully setup NaviSlim repo, download NaviAPPFI repo inside rl_drone repo
+2. Create a python environment (you can use also anaconda or miniconda) with python version 3.12.7 and activate it
 ```bash
-cd rl_drone
-git clone https://github.com/GiuseppeEsposito98/NaviAPPFI.git
+conda create -n airnnfi python==3.12.7
+conda activate airnnfi
 ```
 
-4. Inside the NaviAPPFI download the NaviSlimPytorchFI repo
+3. Clone NaviAPPFI repo inside rl_drone repo
 ```bash
-cd NaviAPPFI
+cd map_tool_box
+git clone https://github.com/GiuseppeEsposito98/AirSimNNaviFI.git
+```
+
+4. Install the packages with the env_setup.bat file, provided in the AirSimNNaviFI folder. It is strictly required to do that through the bat file to meet the library dependences constraints. If you are using windows the bat file is an executable itself so you need to type the file path on the Command Line Interface (CLI) and run it. For Linux users, you can execute the bat file as it is a bash file.
+```bash
+bash AirSimNNaviFI/env_setup.bat
+```
+
+4. Inside the NaviAPPFI clone the NaviSlimPytorchFI repo
+```bash
+cd AirSimNNaviFI
 git clone https://github.com/GiuseppeEsposito98/NaviSlimPytorchFI.git
+cd ..
 ```
 
 5. If you don't have the conda environment already activated, activate it and set the right repo paths with the following snippet of code
 
 ```bash
-source ~/miniconda3/bin/activate airsim
-cd ..
-python -m pip install -e ./NaviAPPFI/NaviSlimPytorchFI/
+python -m pip install -e ./AirSimNNaviFI/NaviSlimPytorchFI/
 ```
 
-### Subsection 2: Setup that does not requires Airsim support but uses the synthetic data
-1. Download the zip file named iasl_environment.zip that I shared on the slack group
-2. Unzip iasl_environment.zip
-3. Organize the root folder using the following commands
+### Subsection 2: Download the dataset and Navigation Neural Network weights
+1. According to what is described in map_tool_box repo, download the dataset available at zip files data/maps/AirSimNH/sensors/DepthV1.zip of this dropbox: 
+    https://www.dropbox.com/scl/fo/vg3t52glaj0yqk9njlc4d/AB17lboB6pdP84wh-tt7OkI?rlkey=ra6u86nrj28kea1dh84emw6hy&st=vagz7xrp&dl=0 
+2. Download the (Neural Network) NN weights and setup files available in models folder of the same Dropbox. 
+3. Sort the items within the correct directories: 
+    - The dataset DepthV1.zip goes in the downloaded repo folder maps/AirSimNH/sensors/ (if sensors parent folder is not available, you need to create it). 
+    - For the downloaded files for the NN, you can just drag and drop the models folder (downloaded from Dropbox) in the main repo directory (map_tool_box). 
+4. Unzip the DepthV1.zip 
+5. Remove the file file_map.p that you may find in DepthV1 unzipped folder 
 
-```bash
-cd iasl_environment/reinforcement_learning
-mv models/ ../models
-mv data/ ../data
-mv utils/ ../utils
-```
-
-4. Follow the steps provided in the README.md file in NaviSlim repo from step 2 on..
-
-5. Once you have successfully setup NaviSlim repo, download NaviAPPFI repo inside rl_drone repo
-```bash
-git clone https://github.com/GiuseppeEsposito98/NaviAPPFI.git
-```
-
-6. Inside the NaviAPPFI download the NaviSlimPytorchFI repo
-```bash
-cd NaviAPPFI
-git clone https://github.com/GiuseppeEsposito98/NaviSlimPytorchFI.git
-```
-
-7. If you don't have the conda environment already activated, activate it and set the right repo paths with the following snippet of code
-
-```bash
-source ~/miniconda3/bin/activate airsim
-cd ..
-python -m pip install -e ./NaviAPPFI/NaviSlimPytorchFI/
-```
 
 # How to use this framework?
 
-### Subsection 1: Simulation running with Airsim from Microsoft
-1. Deactivate the base conda environmet and activate the airsim environment
-2. Change in your terminal the directory to the rl_drone directory
-3. Run the Fsim command
+### Subsection 1: Run in local
 
+1. Activate the conda environment
 ```bash
-bash ./NaviAPPFI/bash/dqn.sh < log_folder_name >
+conda activate airnnfi
 ```
-
-### Subsection 2: Simulation running without Airsim from Microsoft
-1. Deactivate the base conda environmet and activate the airsim environment
-2. Change in your terminal the directory to the iasl_environment/reinforcement_learning directory
-3. Run the Fsim command
-
+2. Run the command 
 ```bash
-bash ./NaviAPPFI/bash/dqn_wo_sim.sh < log_folder_name >
+bash map_tool_box/AirSimNNaviFI/bash/dqn_wo_sim_nber_lyr.sh FSIM 0 10
 ```
+To run the fault injection campaign:
+- Saving the data in FSIM folder
+- Targeting the first layer of the Neural Network
+- Executing 10 trial per injected fault
 
-The results will be saved in the folder < log_folder_name >/test
-Specifically, the < log_folder_name >  folder will contain:
-1. The folder test, storing the results of the fault injection:
+### Subsection 1: Run on a SLURM-based HPC system
 
-    - F_<fault_idx>_results folder which, in turn, contains a detailes description of the inference output for each episode and for each step. Specifically (i) F_<fault_idx>_results.json contains results for fsim outcome analysis and (ii) states__part_0.json contains the information related to only the current fault and not reporting the results of the golden run.
+1. Activate the conda environment
+```bash
+conda activate airnnfi
+```
+3. Customize the sbatch script at map_tool_box/AirSimNNaviFI/SLURM_scripts/dqn_wo_sim_nber_lyr.sbatch, based on your system requirements
 
-    - golden_states folder which only contains (i) states__part_0.json which contains information and statistics gathered form the current (golden) run and (ii) observations__part_0 is the file storing the observations across all episodes and all steps in a numpy format. 
-
-    - ckpt_FI.json still needs to be optimized and setup but its aim is to rerun simulations when they get stuck for any reason. 
-
-    - fault_list.csv contains the list of injected faults.
-
-    - fsim_report.csv contains general statistics gathered from the whole simulation scattered at the fault level. 
-
-2. model.zip which contains the weights for the Reinforcement Learning-based Navigation model
-3. configuration.json file which contains the configurations of the (i) drone simulator and (2) drone experimental setup
-
+2. Run the command 
+```bash
+bash map_tool_box/AirSimNNaviFI/SLURM_scripts/Run_parallel_jobs.sh FSIM
+```
+To launch 8 jobs (1 per Neural Network layer) and save the data on FSIM folder.

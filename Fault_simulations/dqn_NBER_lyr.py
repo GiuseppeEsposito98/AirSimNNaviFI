@@ -2,7 +2,7 @@ from map_tool_box.modules import Data_Structure
 from map_tool_box.modules import Environment
 from map_tool_box.modules import Data_Map
 # from map_tool_box.modules import Control
-from map_tool_box.NaviAPPFI.Controller import Control
+from map_tool_box.AirSimNNaviFI.Controller import Control
 from map_tool_box.modules import Spawner
 # from map_tool_box.modules import Other
 from map_tool_box.modules import Astar
@@ -18,13 +18,13 @@ import json
 import argparse
 import torch
 from pytorchfi.FI_Weights import FI_manager
-from map_tool_box.NaviAPPFI.Hardening.FQ_ViT.models.ptq.layers import QConv2d, QLinear  
+from map_tool_box.AirSimNNaviFI.Hardening.FQ_ViT.models.ptq.layers import QConv2d, QLinear  
 
 def get_argparse():
     parser = argparse.ArgumentParser(description='DQN configuration')
     parser.add_argument('--fsim_config', help='Fault simulation configuration json file path')
     parser.add_argument('--target_layer', help='The layer that the simulation has to target')
-    parser.add_argument('--trials', help='The layer that the simulation has to target')
+    parser.add_argument('--trials', help='Number of FI trials to run')
     parser.add_argument('--fsim_log_name', required=True, help='Directory name where the results are stored')
     parser.add_argument('--hardening', default='', help='Name of the hardening Technique to implement')
     parser.add_argument('--paths_number', default=5, help='Number of paths to evaluate on (if not specified will evaluate on 5 paths per difficulty level)')
@@ -76,74 +76,74 @@ def main(args):
 
         if args.hardening == 'Ranger':
             backup_dir = f'reinforcement_learning/backup/{args.hardening}'
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
             layer_indices=[args.hardened_layer]
             configuration = implement_ranger(configuration=configuration, layers = layer_indices, output_dir=backup_dir)
         elif args.hardening == 'MedianFilter':
-            from NaviAPPFI.Hardening.MedianFilter import implement_median_filter
+            from AirSimNNaviFI.Hardening.MedianFilter import implement_median_filter
             configuration = implement_median_filter(configuration)
         elif args.hardening == 'FTClipAct':
-            from NaviAPPFI.Hardening.FTClipAct import implement_FTClipAct
+            from AirSimNNaviFI.Hardening.FTClipAct import implement_FTClipAct
             configuration = implement_FTClipAct(configuration)
         elif args.hardening == 'Quantization':
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
-            from NaviAPPFI.Hardening.FQ_ViT.config import Config
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
+            from AirSimNNaviFI.Hardening.FQ_ViT.config import Config
             cfg = Config(ptf=False, lis=False, quant_method='minmax')
             configuration = apply_quantization(configuration, cfg=cfg)
         elif args.hardening == 'Best_model':
             backup_dir = f'reinforcement_learning/backup/{args.hardening}'
             os.makedirs(f'{backup_dir}', exist_ok=True)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
             layers = [1,3,4,6]
             configuration = implement_ranger(configuration, layers=layers, output_dir=backup_dir)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
-            from NaviAPPFI.Hardening.FQ_ViT.config import Config
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
+            from AirSimNNaviFI.Hardening.FQ_ViT.config import Config
             cfg = Config(ptf=False, lis=False, quant_method='minmax')
             layers = [0,2,5]
             configuration = apply_quantization(configuration, cfg=cfg, layers=layers, output_dir=backup_dir)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
             layers = [2,5,7]
             configuration = apply_tmr(configuration, layers=layers)
         elif args.hardening == 'Model1':
             backup_dir = f'reinforcement_learning/backup/{args.hardening}'
             os.makedirs(f'{backup_dir}', exist_ok=True)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
             layers = [2,3]
             configuration = implement_ranger(configuration, layers=layers, output_dir=backup_dir)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
-            from NaviAPPFI.Hardening.FQ_ViT.config import Config
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
+            from AirSimNNaviFI.Hardening.FQ_ViT.config import Config
             cfg = Config(ptf=False, lis=False, quant_method='minmax')
             layers = [1]
             configuration = apply_quantization(configuration, cfg=cfg, layers=layers, output_dir=backup_dir)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
             layers = [5,6,7]
             configuration = apply_tmr(configuration, layers=layers)
         elif args.hardening == 'Model2':
             backup_dir = f'reinforcement_learning/backup/{args.hardening}'
             os.makedirs(f'{backup_dir}', exist_ok=True)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
             layers = [0,1,3]
             configuration = implement_ranger(configuration, layers=layers, output_dir=backup_dir)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
-            from NaviAPPFI.Hardening.FQ_ViT.config import Config
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
+            from AirSimNNaviFI.Hardening.FQ_ViT.config import Config
             cfg = Config(ptf=False, lis=False, quant_method='minmax')
             layers = [4]
             configuration = apply_quantization(configuration, cfg=cfg, layers=layers, output_dir=backup_dir)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
             layers = [2,4,7]
             configuration = apply_tmr(configuration, layers=layers)
         elif args.hardening == 'Model3':
             backup_dir = f'reinforcement_learning/backup/{args.hardening}'
             os.makedirs(f'{backup_dir}', exist_ok=True)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
             layers = [5]
             configuration = implement_ranger(configuration, layers=layers, output_dir=backup_dir)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
-            from NaviAPPFI.Hardening.FQ_ViT.config import Config
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
+            from AirSimNNaviFI.Hardening.FQ_ViT.config import Config
             cfg = Config(ptf=False, lis=False, quant_method='minmax')
             layers = [1,2,6]
             configuration = apply_quantization(configuration, cfg=cfg, layers=layers, output_dir=backup_dir)
-            from NaviAPPFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
+            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
             layers = [1,2,4,6,7]
             configuration = apply_tmr(configuration, layers=layers)
 
@@ -157,7 +157,7 @@ def main(args):
         write_file = 'evaluation__test.p'
         write_path = Path(write_dir, write_file)
         accuracy, episodes = Control.eval(environment, model, write_path=write_path, save_observations=False, run='Golden', FI_setup=FI_setup)
-
+        
         FI_setup.close_golden_results()
 
         # sys.exit()
@@ -175,7 +175,7 @@ def main(args):
 
         FI_setup.generate_fault_list(flist_mode=fsim_config['fault_info']['neurons_rand_single_layer']['mode_inj'],
                                         f_list_file='fault_list.csv',
-                                        trials= int(fsim_config['fault_info']['neurons_rand_single_layer']['trials']),
+                                        trials= int(args.trials),
                                         layer=int(fsim_config['fault_info']['neurons_rand_single_layer']['layer']),
                                         bers = fsim_config['fault_info']['neurons_rand_single_layer']['bers'])
         
@@ -189,7 +189,7 @@ def main(args):
             FI_setup.FI_framework.bit_flip_err_neuron(fault)
 
             accuracy, episodes = Control.eval(environment, model=FI_setup.FI_framework.faulty_model, write_path=write_path, save_observations=False, fault=fault, FI_setup=FI_setup, run='Faulty')
-
+            
             FI_setup.parse_results()
 
         configuration.disconnect_all()

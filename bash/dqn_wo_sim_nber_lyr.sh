@@ -7,13 +7,16 @@ export PYTHONPATH="$PWD"
 echo ${CUDA_VISIBLE_DEVICES}
 
 job_id=0
+hardening="base"
 
 DIR="$1"
 lyr="$2"
 trials="$3"
+hardening="$4"
 # commit="newest"
+echo "hardening: ${hardening}"
 
-Sim_dir=${global_PWD}/${DIR}/JOBID_N${lyr}/
+Sim_dir=${global_PWD}/${DIR}_${hardening}/JOBID_N${lyr}/
 
 mkdir -p ${Sim_dir}
 cd ${Sim_dir}
@@ -27,6 +30,8 @@ python3 ${global_PWD}/map_tool_box/AirSimNNaviFI/Fault_simulations/dqn_NBER_lyr.
     --fsim_config ${Sim_dir}FI_config.json \
     --target_layer $lyr \
     --trials $trials \
-    --fsim_log_name ${Sim_dir}
+    --fsim_log_name ${Sim_dir} \
+    --hardening ${hardening}
 
-python ${global_PWD}/map_tool_box/AirSimNNaviFI/analysis/postprocess.py --fsim_log ${Sim_dir} --target_lyr ${lyr}
+
+python ${global_PWD}/map_tool_box/AirSimNNaviFI/analysis/postprocess.py --fsim_log ${Sim_dir}_${hardening} --target_lyr ${lyr} 

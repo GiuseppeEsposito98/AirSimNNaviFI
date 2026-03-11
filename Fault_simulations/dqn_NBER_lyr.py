@@ -18,7 +18,7 @@ import json
 import argparse
 import torch
 from pytorchfi.FI_Weights import FI_manager
-from map_tool_box.AirSimNNaviFI.Hardening.FQ_ViT.models.ptq.layers import QConv2d, QLinear  
+from copy import deepcopy
 
 def get_argparse():
     parser = argparse.ArgumentParser(description='DQN configuration')
@@ -42,9 +42,12 @@ def main(args):
     # set parameters for which set of Astar paths to evaluate on
     astar_version = 'version_1'
     set_name = 'test' # train val test
-    n_paths = int(args.paths_number) # if None then will read all paths from file, otherwise an integer value specifying number of paths PER DIFFICULTY
-    difficulties = args.difficulties # if None then will read all difficulties from file, otherwise expects a list of difficulty keys
-
+    n_paths = deepcopy(int(args.paths_number)) # if None then will read all paths from file, otherwise an integer value specifying number of paths PER DIFFICULTY
+    difficulties = deepcopy(args.difficulties) # if None then will read all difficulties from file, otherwise expects a list of difficulty keys
+    fsim_config = deepcopy(args.fsim_config)
+    hardening = deepcopy(args.hardening)
+    target_layer = deepcopy(args.target_layer)
+    trials = deepcopy(args.trials)
     # read paths from file (usese some variables read in from config.py file) 
         # -- you can overwrite map_name or astar_version, but the default values or those used to train the model
     paths = Astar.read_curriculum(map_name, astar_version, set_name, n_paths, difficulties)
@@ -58,13 +61,13 @@ def main(args):
     # create environment that we will step through (uses some objects read in from config.py file)
     environment = Environment.Episodic(data_map, spawner, actor, observer, terminators, others)
 
-    if args.fsim_config:
-        with open(f'{args.fsim_config}', "r") as f:
+    if fsim_config:
+        with open(f'{fsim_config}', "r") as f:
             content = f.read()
             fsim_config=json.loads(content)
         print(fsim_config)
         
-        full_log_path = args.fsim_log_name
+        full_log_path = deepcopy(args.fsim_log_name)
         
         num_episodes = len(spawner.difficulties) * n_paths
 
@@ -73,84 +76,18 @@ def main(args):
 
         # print(configuration.controller._model._sb3model.policy.q_net)
         # print(args.hardening)
+        
+        if hardening:
+            backup_dir=f"{Utils.get_global('repository_directory')}/AirSimNNaviFI/backup/{hardening}"
+            Path(backup_dir).mkdir(exist_ok=True)
 
-        if args.hardening == 'Ranger':
-            backup_dir = f'reinforcement_learning/backup/{args.hardening}'
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
-            layer_indices=[args.hardened_layer]
-            configuration = implement_ranger(configuration=configuration, layers = layer_indices, output_dir=backup_dir)
-        elif args.hardening == 'MedianFilter':
-            from AirSimNNaviFI.Hardening.MedianFilter import implement_median_filter
-            configuration = implement_median_filter(configuration)
-        elif args.hardening == 'FTClipAct':
-            from AirSimNNaviFI.Hardening.FTClipAct import implement_FTClipAct
-            configuration = implement_FTClipAct(configuration)
-        elif args.hardening == 'Quantization':
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
-            from AirSimNNaviFI.Hardening.FQ_ViT.config import Config
-            cfg = Config(ptf=False, lis=False, quant_method='minmax')
-            configuration = apply_quantization(configuration, cfg=cfg)
-        elif args.hardening == 'Best_model':
-            backup_dir = f'reinforcement_learning/backup/{args.hardening}'
-            os.makedirs(f'{backup_dir}', exist_ok=True)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
-            layers = [1,3,4,6]
-            configuration = implement_ranger(configuration, layers=layers, output_dir=backup_dir)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
-            from AirSimNNaviFI.Hardening.FQ_ViT.config import Config
-            cfg = Config(ptf=False, lis=False, quant_method='minmax')
-            layers = [0,2,5]
-            configuration = apply_quantization(configuration, cfg=cfg, layers=layers, output_dir=backup_dir)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
-            layers = [2,5,7]
-            configuration = apply_tmr(configuration, layers=layers)
-        elif args.hardening == 'Model1':
-            backup_dir = f'reinforcement_learning/backup/{args.hardening}'
-            os.makedirs(f'{backup_dir}', exist_ok=True)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
-            layers = [2,3]
-            configuration = implement_ranger(configuration, layers=layers, output_dir=backup_dir)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
-            from AirSimNNaviFI.Hardening.FQ_ViT.config import Config
-            cfg = Config(ptf=False, lis=False, quant_method='minmax')
-            layers = [1]
-            configuration = apply_quantization(configuration, cfg=cfg, layers=layers, output_dir=backup_dir)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
-            layers = [5,6,7]
-            configuration = apply_tmr(configuration, layers=layers)
-        elif args.hardening == 'Model2':
-            backup_dir = f'reinforcement_learning/backup/{args.hardening}'
-            os.makedirs(f'{backup_dir}', exist_ok=True)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
-            layers = [0,1,3]
-            configuration = implement_ranger(configuration, layers=layers, output_dir=backup_dir)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
-            from AirSimNNaviFI.Hardening.FQ_ViT.config import Config
-            cfg = Config(ptf=False, lis=False, quant_method='minmax')
-            layers = [4]
-            configuration = apply_quantization(configuration, cfg=cfg, layers=layers, output_dir=backup_dir)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
-            layers = [2,4,7]
-            configuration = apply_tmr(configuration, layers=layers)
-        elif args.hardening == 'Model3':
-            backup_dir = f'reinforcement_learning/backup/{args.hardening}'
-            os.makedirs(f'{backup_dir}', exist_ok=True)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Ranger import implement_ranger
-            layers = [5]
-            configuration = implement_ranger(configuration, layers=layers, output_dir=backup_dir)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.Quantization import apply_quantization
-            from AirSimNNaviFI.Hardening.FQ_ViT.config import Config
-            cfg = Config(ptf=False, lis=False, quant_method='minmax')
-            layers = [1,2,6]
-            configuration = apply_quantization(configuration, cfg=cfg, layers=layers, output_dir=backup_dir)
-            from AirSimNNaviFI.Hardening.hard41293c68fe7e15560d26ba8fa6c1bf377a7df4fd.TMR import apply_tmr
-            layers = [1,2,4,6,7]
-            configuration = apply_tmr(configuration, layers=layers)
-
-
-        # print(configuration.controller._model._sb3model.policy.q_net)
+        if hardening == 'Ranger':
+            from map_tool_box.AirSimNNaviFI.Hardening.Ranger import implement_ranger
+            layer_indices=[int(target_layer)]
+            model = implement_ranger(model_UT=model, layers = layer_indices, output_dir=backup_dir, map_name=map_name, model_name=model_name)
+        
         print(model.sb3model.q_net)
-
+        
         # output results here
         write_dir = 'Golden_results/'
         os.makedirs(write_dir, exist_ok=True)
@@ -165,7 +102,7 @@ def main(args):
         # configuration.controller.run()
         
         # FAULT SIMULATION
-        layer_types = [QConv2d, QLinear, torch.nn.Conv2d, torch.nn.Linear]
+        layer_types = [torch.nn.Conv2d, torch.nn.Linear]
 
         FI_setup.FI_framework.create_fault_injection_model(device=torch.device('cpu'),
                                                             model=model,
@@ -175,7 +112,7 @@ def main(args):
 
         FI_setup.generate_fault_list(flist_mode=fsim_config['fault_info']['neurons_rand_single_layer']['mode_inj'],
                                         f_list_file='fault_list.csv',
-                                        trials= int(args.trials),
+                                        trials= int(trials),
                                         layer=int(fsim_config['fault_info']['neurons_rand_single_layer']['layer']),
                                         bers = fsim_config['fault_info']['neurons_rand_single_layer']['bers'])
         

@@ -71,7 +71,7 @@ conda activate airnnfi
 ```
 2. Run the command 
 ```bash
-bash map_tool_box/AirSimNNaviFI/bash/dqn_wo_sim_nber_lyr.sh FSIM 0 10
+bash map_tool_box/AirSimNNaviFI/bash/dqn_wo_sim_nber_lyr.sh FSIM 0 10 base
 ```
 To run the fault injection campaign:
 - Saving the data in FSIM folder
@@ -88,6 +88,6 @@ conda activate airnnfi
 
 2. Run the command 
 ```bash
-bash map_tool_box/AirSimNNaviFI/SLURM_scripts/Run_parallel_jobs.sh FSIM
+bash map_tool_box/AirSimNNaviFI/SLURM_scripts/Run_parallel_jobs.sh FSIM base
 ```
 To launch 8 jobs (1 per Neural Network layer) and save the data on FSIM folder.

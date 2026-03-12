@@ -5,13 +5,24 @@ import random
 import copy
 import os
 import sys
+import torch
+import scipy
 
 SUCCESS_REASONS = ['Goal']
 
 # step through an entire episode with environment, generationg actions from model
 # environment is an Episodic class object in the Environment.py module
 # model can be any object that has a predict() function as defined below
-def play_episode(environment, model, save_observations=False, episode=0, Fsim_setup = None, run='', req_stat=None, input_list=None, calib_iter = None):
+def play_episode(environment, model, save_observations=False, save_qvalues=False, episode=0, Fsim_setup = None, run='', req_stat=None, input_list=None, calib_iter = None):
+    
+    actions = list()
+
+    obs_mean = list()
+    obs_std = list()
+    obs_min = list()
+    
+    max_prob = list()
+    skw_prob = list()
 
     # start episode
     observations, state = environment.start()
@@ -19,17 +30,21 @@ def play_episode(environment, model, save_observations=False, episode=0, Fsim_se
     # initialize and log state variables
     if save_observations: # include observations? (this is memory heavy)
         state['observations'] = copy.deepcopy(observations)
+
+    obs_mean.append(float(np.mean(observations['img'][0,:,:])))
+    obs_min.append(float(np.min(observations['img'][0,:,:])))
+    obs_std.append(float(np.var(observations['img'][0,:,:])))
+    # questo slicing è da controllare
+
     states = [state]
     
     # iterate through each step
     terminate = False
     while(not terminate):
         
-        # get action from model based on observations
-        if run =='Faulty':
-            action_value, _ = model.predict(observations, deterministic=True)
-        else:
-            action_value = model.predict(observations)
+        action_value, q_values = model.predict2(observations)
+        
+        actions.append(int(action_value))
     
         # take step based on action value
         returned_values = environment.step(action_value)
@@ -41,9 +56,21 @@ def play_episode(environment, model, save_observations=False, episode=0, Fsim_se
             observations, reward, terminate, truncate, state = returned_values
         state['action_value'] = action_value
 
+        if save_qvalues:
+            state['q_values'] = q_values
+
+        probs = scipy.special.softmax(q_values)
+        max_prob.append(float(np.max(probs)))
+        skw_prob.append(float(scipy.stats.skew(probs)))
+
         # log state variables
         if save_observations: # include observations? (this is memory heavy)
             state['observations'] = copy.deepcopy(observations)
+        
+        obs_mean.append(float(np.mean(observations['img'][0,:,:])))
+        obs_min.append(float(np.min(observations['img'][0,:,:])))
+        obs_std.append(float(np.var(observations['img'][0,:,:])))
+
         states.append(state)
 
         if req_stat != None:
@@ -58,9 +85,10 @@ def play_episode(environment, model, save_observations=False, episode=0, Fsim_se
 
     # end episode
     environment.end()
+    print(actions)
 
     if Fsim_setup:
-        Fsim_setup.FI_report.update_report(episode, len(states), states[-1]['end'])
+        Fsim_setup.FI_report.update_report(episode, len(states), states[-1]['end'], actions, obs_mean, obs_min, obs_std, max_prob, skw_prob)
 
     if req_stat == None:
         return states
@@ -71,7 +99,7 @@ def play_episode(environment, model, save_observations=False, episode=0, Fsim_se
 # calculates navigation accuracy
 def eval(environment, model, write_path=None, save_observations=False, print_freq=10,
          ckpt_freq=10, goal_threshold=4, output_progress=False, start_path_idx=None, end_path_idx=None,
-         fault=None, FI_setup=None, run='', req_stat=None, calib_iter = None):
+         fault=None, FI_setup=None, run='', req_stat=None, calib_iter = None, save_qvalues=False):
 
     # reset spawner -- sets any vars as needed to check if there are more paths to evaluate
     environment.spawner.reset()
@@ -120,10 +148,10 @@ def eval(environment, model, write_path=None, save_observations=False, print_fre
 
         # step though single episode
         if req_stat == None:
-            states = play_episode(environment, model, save_observations, episode = episode_idx, Fsim_setup=FI_setup, run=run, req_stat=req_stat, calib_iter=calib_iter)
+            states = play_episode(environment, model, save_observations, save_qvalues, episode = episode_idx, Fsim_setup=FI_setup, run=run, req_stat=req_stat, calib_iter=calib_iter)
             episodes.append(states)
         else:
-            states, stats = play_episode(environment, model, save_observations, episode = episode_idx, Fsim_setup=FI_setup, run=run, req_stat=req_stat, calib_iter=calib_iter)
+            states, stats = play_episode(environment, model, save_observations, save_qvalues, episode = episode_idx, Fsim_setup=FI_setup, run=run, req_stat=req_stat, calib_iter=calib_iter)
             stats_per_ep[episode_idx] = {}
             for stat in req_stat:
                 stats_per_ep[episode_idx][stat] = stats[stat]/len(rewards)
@@ -200,7 +228,7 @@ def eval_set(environment, model, start_path_idx, end_path_idx, write_path=None, 
             Utils.pickle_write(write_path, episodes)
 
         # step though single episode
-        states = play_episode(environment, model, save_observations, fault, FI_setup, run, req_stat, calib_iter)
+        states = play_episode(environment, model, save_observations, save_qvalues, fault, FI_setup, run, req_stat, calib_iter)
 
         # aggregate results of episode
         episodes[path_idx] = states

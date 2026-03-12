@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --time=23:59:59
-#SBATCH --nodes=2
+#SBATCH --nodes=1
 #SBATCH --partition=gpu_a40
 #SBATCH --gres=gpu
-#SBATCH --ntasks-per-node=4
+#SBATCH --ntasks-per-node=1
 #SBATCH --job-name=ResultPostprocessing
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=giuseppe.esposito@polito.it

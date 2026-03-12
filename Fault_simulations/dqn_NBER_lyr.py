@@ -86,14 +86,13 @@ def main(args):
             layer_indices=[int(target_layer)]
             model = implement_ranger(model_UT=model, layers = layer_indices, output_dir=backup_dir, map_name=map_name, model_name=model_name)
         
-        print(model.sb3model.q_net)
         
         # output results here
         write_dir = 'Golden_results/'
         os.makedirs(write_dir, exist_ok=True)
         write_file = 'evaluation__test.p'
         write_path = Path(write_dir, write_file)
-        accuracy, episodes = Control.eval(environment, model, write_path=write_path, save_observations=False, run='Golden', FI_setup=FI_setup)
+        accuracy, episodes = Control.eval(environment, model, write_path=write_path, save_observations=False, save_qvalues=False, run='Golden', FI_setup=FI_setup)
         
         FI_setup.close_golden_results()
 
@@ -124,8 +123,9 @@ def main(args):
             FI_setup.open_faulty_results(f"F_{k}_results")
 
             FI_setup.FI_framework.bit_flip_err_neuron(fault)
-
-            accuracy, episodes = Control.eval(environment, model=FI_setup.FI_framework.faulty_model, write_path=write_path, save_observations=False, fault=fault, FI_setup=FI_setup, run='Faulty')
+            # print(FI_setup.FI_framework.faulty_model)
+            # sys.exit()
+            accuracy, episodes = Control.eval(environment, model=FI_setup.FI_framework.faulty_model, write_path=write_path, save_observations=False, save_qvalues=False, fault=fault, FI_setup=FI_setup, run='Faulty')
             
             FI_setup.parse_results()
 

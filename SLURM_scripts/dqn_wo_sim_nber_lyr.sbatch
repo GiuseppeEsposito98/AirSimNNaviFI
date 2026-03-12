@@ -1,13 +1,14 @@
 #!/bin/bash
 #SBATCH --time=24:00:00
-#SBATCH --nodes=1
+#SBATCH --nodes=2
 #SBATCH --partition=gpu_a40
 #SBATCH --gres=gpu
-#SBATCH --ntasks-per-node=8
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem-per-cpu=30000
 #SBATCH --job-name=ResultPostprocessing
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=giuseppe.esposito@polito.it
-
+#SBATCH --mail-user=giuseppe.esposito@polito.it 
 
 source ~/miniconda3/bin/activate
 conda deactivate

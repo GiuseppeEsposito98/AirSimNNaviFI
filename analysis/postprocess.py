@@ -230,6 +230,7 @@ def main(args):
     csv_file = f'{root_path}/summary.csv'
 
     golden_file_path = f'{root_path}/Golden_results/evaluation__test.p'
+    golden_file_path_det = f'{root_path}/Golden_results.json'
 
     header = ['fault_id',
                 'episode_id',
@@ -253,7 +254,18 @@ def main(args):
                 'step_wise_euclidean_min',
                 'step_wise_euclidean_tot',
                 'golden_energy',
-                'faulty_energy',]
+                'faulty_energy',
+                'agrees',
+                'faulty_obs_mean',
+                'golden_obs_mean',
+                'faulty_obs_min',
+                'golden_obs_min',
+                'faulty_obs_var',
+                'golden_obs_var',
+                'faulty_max_prob',
+                'golden_max_prob',
+                'faulty_skw_prob',
+                'golden_skw_prob',]
 
 
     with open(csv_file, mode='w', newline='') as f:
@@ -261,6 +273,9 @@ def main(args):
         writer.writeheader()
 
     golden_data = pk_read(golden_file_path)
+    with open(golden_file_path_det, 'r') as f:
+        golden_data_det = json.load(f)
+
     # print(golden_data)
     golden_turns_per_ep, golden_path_length_per_ep_x, golden_path_length_per_ep_y, golden_path_length_per_ep_tot, golden_stops_per_ep, golden_ca_act_per_ep, golden_turns_pivot_per_ep, golden_energy_per_ep = evaluate_sim(golden_data)
 
@@ -272,6 +287,8 @@ def main(args):
         idx += 1
         folder_path = os.path.join(root_path, folder)
         file_path = os.path.join(folder_path, file_name)
+
+        file_path_det = os.path.join(folder_path, f'{file_name}.json')
 
         # Initialize the template of the info to collect at the episode level
         template = {
@@ -297,15 +314,25 @@ def main(args):
                 'step_wise_euclidean_min' : None,
                 'step_wise_euclidean_tot' : None,
                 'golden_energy': None,
-                'faulty_energy':None
+                'faulty_energy':None,
+                'agrees': None,
+                'faulty_obs_mean': None,
+                'golden_obs_mean': None,
+                'faulty_obs_min': None,
+                'golden_obs_min': None,
+                'faulty_obs_var': None,
+                'golden_obs_var': None,
+                'faulty_max_prob': None,
+                'golden_max_prob': None,
+                'faulty_skw_prob': None,
+                'golden_skw_prob': None,
             }
         
         if os.path.exists(file_path):
-            try:
-                faulty_data = pk_read(file_path)
-            except:
-                print(file_path)
-                pass
+            faulty_data = pk_read(file_path)
+            with open(file_path_det, 'r') as f:
+                faulty_data_det = json.load(f)
+
             # print(faulty_data[0])
             # Evaluate the number of turns and the path length in the faulty scenario
             faulty_turns_per_ep, faulty_path_length_per_ep_x, faulty_path_length_per_ep_y, faulty_path_length_per_ep_tot, faulty_stops_per_ep, faulty_ca_act_per_ep, faulty_turns_pivot_per_ep, faulty_energy_per_ep = evaluate_sim(faulty_data, golden_path_length_per_ep_tot, golden_sim=golden_data, fault_id = folder.split('_')[1], fsim_log=root_path)
@@ -315,6 +342,10 @@ def main(args):
 
                 for episode_id in range(len(faulty_data)):
                     faulty_sim = faulty_data[episode_id]
+
+                    faulty_sim_det = faulty_data_det[f'ep{episode_id}']
+                    golden_sim_det = golden_data_det[f'ep{episode_id}']
+                    
                     euc_stats = []
                     # manh_stats = []
                     # euc_ratio_stats = []
@@ -327,6 +358,8 @@ def main(args):
 
                     # Keep track of which path is longer between golden and faulty
                     longer_path = 'same'
+                    
+                    agrees = list()
                     for golden_step, faulty_step in zip_longest(range(len(golden_sim)), range(len(faulty_sim)), fillvalue='Not avail'):
                         
                         # if the golden path is shorter
@@ -334,12 +367,15 @@ def main(args):
                             golden_current_step_detail = deepcopy(golden_last_step)
                             faulty_current_step_detail = faulty_sim[faulty_step]
                             longer_path = 'faulty'
+                            agree = False
+                            
 
                         # if the faulty path is shorter
                         elif faulty_step == 'Not avail':
                             faulty_current_step_detail = deepcopy(faulty_last_step)
                             golden_current_step_detail = golden_sim[golden_step]
                             longer_path = 'golden'
+                            agree = False
                         
                         # while the current step is available for both golden and faulty path
                         else:
@@ -348,6 +384,10 @@ def main(args):
                                     
                             golden_last_step = deepcopy(golden_current_step_detail)
                             faulty_last_step = deepcopy(faulty_current_step_detail)
+
+                            agree = golden_sim_det['actions'][golden_step] == faulty_sim_det['actions'][faulty_step]
+                        
+                        agrees.append(agree)
 
                         # position in the faulty path
                         fp = (faulty_current_step_detail['point'].x, faulty_current_step_detail['point'].y, faulty_current_step_detail['point'].z)
@@ -359,6 +399,7 @@ def main(args):
                         euc_distance = euclidean(gp, fp)
 
                         euc_stats.append(euc_distance)
+
                     golden_termination = golden_data[episode_id][-1]['end']
                     faulty_termination = faulty_data[episode_id][-1]['end']
 
@@ -393,6 +434,23 @@ def main(args):
                     template['faulty_number_of_stops'] = faulty_stops_per_ep[episode_id]
                     template['faulty_ca_act'] = faulty_ca_act_per_ep[episode_id]
                     template['faulty_path_length'] = faulty_path_length_per_ep_tot[episode_id]
+
+                    template['agrees'] = agrees
+
+                    template['faulty_obs_mean'] = faulty_sim_det['obs_mean']
+                    template['golden_obs_mean'] = golden_sim_det['obs_mean']
+
+                    template['faulty_obs_min'] = faulty_sim_det['obs_min']
+                    template['golden_obs_min'] = golden_sim_det['obs_min']
+
+                    template['faulty_obs_var'] = faulty_sim_det['obs_std']
+                    template['golden_obs_var'] = golden_sim_det['obs_std']
+
+                    template['faulty_max_prob'] = faulty_sim_det['max_prob']
+                    template['golden_max_prob'] = golden_sim_det['max_prob']
+
+                    template['faulty_skw_prob'] = faulty_sim_det['skw_prob']
+                    template['golden_skw_prob'] = golden_sim_det['skw_prob']
 
                     writer.writerow(template)
                     f.flush()

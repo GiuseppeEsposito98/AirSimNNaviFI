@@ -8,6 +8,7 @@ import csv
 import pickle
 import numpy as np
 import argparse
+import json
 
 def get_argparse():
     parser = argparse.ArgumentParser(description='DQN configuration')
@@ -288,7 +289,7 @@ def main(args):
         folder_path = os.path.join(root_path, folder)
         file_path = os.path.join(folder_path, file_name)
 
-        file_path_det = os.path.join(folder_path, f'{file_name}.json')
+        faulty_file_path_det = os.path.join(folder_path, f'{folder}.json')
 
         # Initialize the template of the info to collect at the episode level
         template = {
@@ -330,7 +331,7 @@ def main(args):
         
         if os.path.exists(file_path):
             faulty_data = pk_read(file_path)
-            with open(file_path_det, 'r') as f:
+            with open(faulty_file_path_det, 'r') as f:
                 faulty_data_det = json.load(f)
 
             # print(faulty_data[0])
@@ -343,8 +344,8 @@ def main(args):
                 for episode_id in range(len(faulty_data)):
                     faulty_sim = faulty_data[episode_id]
 
-                    faulty_sim_det = faulty_data_det[f'ep{episode_id}']
-                    golden_sim_det = golden_data_det[f'ep{episode_id}']
+                    faulty_sim_det = faulty_data_det[f'ep{episode_id+1}']
+                    golden_sim_det = golden_data_det[f'ep{episode_id+1}']
                     
                     euc_stats = []
                     # manh_stats = []
@@ -360,12 +361,13 @@ def main(args):
                     longer_path = 'same'
                     
                     agrees = list()
-                    for golden_step, faulty_step in zip_longest(range(len(golden_sim)), range(len(faulty_sim)), fillvalue='Not avail'):
+                    
+                    for golden_step, faulty_step in zip_longest(range(len(golden_sim_det['actions'])), range(len(faulty_sim_det['actions'])), fillvalue='Not avail'):
                         
                         # if the golden path is shorter
                         if golden_step =='Not avail':
                             golden_current_step_detail = deepcopy(golden_last_step)
-                            faulty_current_step_detail = faulty_sim[faulty_step]
+                            faulty_current_step_detail = faulty_sim[faulty_step+1]
                             longer_path = 'faulty'
                             agree = False
                             
@@ -373,18 +375,16 @@ def main(args):
                         # if the faulty path is shorter
                         elif faulty_step == 'Not avail':
                             faulty_current_step_detail = deepcopy(faulty_last_step)
-                            golden_current_step_detail = golden_sim[golden_step]
+                            golden_current_step_detail = golden_sim[golden_step+1]
                             longer_path = 'golden'
                             agree = False
                         
-                        # while the current step is available for both golden and faulty path
                         else:
-                            golden_current_step_detail = golden_sim[golden_step]
-                            faulty_current_step_detail = faulty_sim[faulty_step]
+                            golden_current_step_detail = golden_sim[golden_step+1]
+                            faulty_current_step_detail = faulty_sim[faulty_step+1]
                                     
                             golden_last_step = deepcopy(golden_current_step_detail)
                             faulty_last_step = deepcopy(faulty_current_step_detail)
-
                             agree = golden_sim_det['actions'][golden_step] == faulty_sim_det['actions'][faulty_step]
                         
                         agrees.append(agree)

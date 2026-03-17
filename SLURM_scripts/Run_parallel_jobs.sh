@@ -10,8 +10,7 @@ hardening="$2"
 
 mkdir -p ${global_PWD}/${DIR}_${hardening}
 
-input_args=(0)
-#   1 2 3 4 5 6 7
+input_args=(0 1 2 3 4 5 6 7)
 array_size=${#input_args[@]}
 
 for ((i=0; i<$array_size; i++)); do

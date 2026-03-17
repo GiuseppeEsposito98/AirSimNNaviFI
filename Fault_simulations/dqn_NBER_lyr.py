@@ -129,8 +129,6 @@ def main(args):
             
             FI_setup.parse_results()
 
-        configuration.disconnect_all()
-
 if __name__ == "__main__":
     # point to model you wish to evaluate
     models_directory = Utils.get_global('models_directory') # check to make sure this is correct on your local computer (it should be auto)

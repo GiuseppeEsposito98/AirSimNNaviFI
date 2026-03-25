@@ -3,7 +3,6 @@ NaviAPPFI performs Fault Injection campaigns on the learnable parameters of the 
 
 # Prerequisites
 python=3.12.7
-NVIDIA compatible drivers version:  ???
 
 # Framework Setup
 Install miniconda environmet if you already have it ignore this step
@@ -15,9 +14,10 @@ rm ~/miniconda3/miniconda.sh
 ```
 
 ### Subsection 1: Setup the repositories tree
-1. Clone the NaviSlim Repo
+1. Clone the Repository for the Airsim-based autonomous drone simulator and swith to the compatible commit
 ```bash
 git clone https://github.com/WreckItTim/map_tool_box.git
+git switch  --detach 34fa84a8bd309587f59b561cd472d907dc4fa601
 ```
 
 2. Create a python environment (you can use also anaconda or miniconda) with python version 3.12.7 and activate it

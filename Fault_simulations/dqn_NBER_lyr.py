@@ -19,6 +19,7 @@ import argparse
 import torch
 from pytorchfi.FI_Weights import FI_manager
 from copy import deepcopy
+from ultralytics import SAM
 
 
 ELLIPSE_CACHE = {}
@@ -97,7 +98,7 @@ def main(args):
     environment = Environment.Episodic(data_map, spawner, actor, observer, terminators, others)
 
     if fsim_config:
-        sam_model = SAM(os.path.join(model_path, "/home/gesposito/map_tool_box/sam_b.pt")) if bool(args.sam) else None
+        sam_model = SAM("sam_b.pt") if bool(args.sam) else None
         with open(f'{fsim_config}', "r") as f:
             content = f.read()
             fsim_config=json.loads(content)
@@ -122,13 +123,18 @@ def main(args):
             layer_indices=[int(target_layer)]
             model = implement_ranger(model_UT=model, layers = layer_indices, output_dir=backup_dir, map_name=map_name, model_name=model_name)
         
+        ELLIPSE_CACHE = precompute_ellipses(
+            depth_shape=DEPTH_SHAPE,
+            scaling_factors=SCALING_FACTORS,
+            thickness=2
+        )
         
         # output results here
         write_dir = 'Golden_results/'
         os.makedirs(write_dir, exist_ok=True)
         write_file = 'evaluation__test.p'
         write_path = Path(write_dir, write_file)
-        accuracy, episodes = Control.eval(environment, model, write_path=write_path, save_observations=False, save_qvalues=True, run='Golden', FI_setup=FI_setup, sam = sam)
+        accuracy, episodes = Control.eval(environment, model, write_path=write_path, save_observations=False, save_qvalues=True, run='Golden', FI_setup=FI_setup, ellipse_cache=ELLIPSE_CACHE, sam = sam_model)
         
         FI_setup.close_golden_results()
 
@@ -151,14 +157,7 @@ def main(args):
                                         layer=int(fsim_config['fault_info']['neurons_rand_single_layer']['layer']),
                                         bers = fsim_config['fault_info']['neurons_rand_single_layer']['bers'])
         
-        ELLIPSE_CACHE = precompute_ellipses(
-            depth_shape=DEPTH_SHAPE,
-            scaling_factors=SCALING_FACTORS,
-            thickness=2
-        )
-
-        sam_model = 
-
+        
 
         
         for fault, k in FI_setup.iter_fault_list():

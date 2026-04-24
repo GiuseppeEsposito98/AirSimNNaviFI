@@ -20,7 +20,7 @@ def euclidean(p1, p2):
 # step through an entire episode with environment, generationg actions from model
 # environment is an Episodic class object in the Environment.py module
 # model can be any object that has a predict() function as defined below
-def play_episode(environment, model, save_observations=False, save_qvalues=False, episode=0, Fsim_setup = None, run='', req_stat=None, input_list=None, calib_iter = None, sam=None, ellipse_cache=ellipse_cache):
+def play_episode(environment, model, save_observations=False, save_qvalues=False, episode=0, Fsim_setup = None, run='', req_stat=None, input_list=None, calib_iter = None, sam=None, ellipse_cache=None):
     
     actions = list()
 
@@ -58,7 +58,7 @@ def play_episode(environment, model, save_observations=False, save_qvalues=False
 
     if sam != None:
         try:
-            img_stats = ic.assess_complexity(observations['img'], f_id=f'ep{episode}_step{counter}', sam = sam)
+            img_stats = ic.assess_complexity(observations['img'], f_id=f'ep{episode}_step{counter}', ellipse_cache=ellipse_cache, sam = sam)
         except:
             img_stats = {'id': f'ep{episode}_step{counter}',
             'message': 'failure'}

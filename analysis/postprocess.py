@@ -263,10 +263,29 @@ def main(args):
                 'golden_obs_min',
                 'faulty_obs_var',
                 'golden_obs_var',
+                'faulty_rel_distances',
+                'golden_rel_distances',
+                'faulty_max_q',
+                'golden_max_q',
+                'faulty_min_q',
+                'golden_min_q',
+                'faulty_skw_q',
+                'golden_skw_q',
+                'faulty_kur_q',
+                'golden_kur_q',
                 'faulty_max_prob',
                 'golden_max_prob',
+                'faulty_min_prob',
+                'golden_min_prob',
                 'faulty_skw_prob',
-                'golden_skw_prob',]
+                'golden_skw_prob',
+                'faulty_kur_prob',
+                'golden_kur_prob',
+                # 'faulty_max_prob',
+                # 'golden_max_prob',
+                # 'faulty_skw_prob',
+                # 'golden_skw_prob',
+                ]
 
 
     with open(csv_file, mode='w', newline='') as f:
@@ -323,10 +342,24 @@ def main(args):
                 'golden_obs_min': None,
                 'faulty_obs_var': None,
                 'golden_obs_var': None,
-                'faulty_max_prob': None,
-                'golden_max_prob': None,
-                'faulty_skw_prob': None,
-                'golden_skw_prob': None,
+                'faulty_rel_distances':None,
+                'golden_rel_distances':None,
+                'faulty_max_q':None,
+                'golden_max_q':None,
+                'faulty_min_q':None,
+                'golden_min_q':None,
+                'faulty_skw_q':None,
+                'golden_skw_q':None,
+                'faulty_kur_q':None,
+                'golden_kur_q':None,
+                'faulty_max_prob':None,
+                'golden_max_prob':None,
+                'faulty_min_prob':None,
+                'golden_min_prob':None,
+                'faulty_skw_prob':None,
+                'golden_skw_prob':None,
+                'faulty_kur_prob':None,
+                'golden_kur_prob':None,
             }
         
         if os.path.exists(file_path):
@@ -446,11 +479,34 @@ def main(args):
                     template['faulty_obs_var'] = faulty_sim_det['obs_std']
                     template['golden_obs_var'] = golden_sim_det['obs_std']
 
+                    template['faulty_rel_distances'] = faulty_sim_det['rel_distance']
+                    template['golden_rel_distances'] = golden_sim_det['rel_distance']
+                    # max_q, min_q, skw_q, kur_q, max_prob, min_prob, skw_prob, kur_prob
+
+                    template['faulty_max_q'] = faulty_sim_det['max_q']
+                    template['golden_max_q'] = golden_sim_det['max_q']
+
+                    template['faulty_min_q'] = faulty_sim_det['min_q']
+                    template['golden_min_q'] = golden_sim_det['min_q']
+
+                    template['faulty_skw_q'] = faulty_sim_det['skw_q']
+                    template['golden_skw_q'] = golden_sim_det['skw_q']
+
+                    template['faulty_kur_q'] = faulty_sim_det['kur_q']
+                    template['golden_kur_q'] = golden_sim_det['kur_q']
+
                     template['faulty_max_prob'] = faulty_sim_det['max_prob']
                     template['golden_max_prob'] = golden_sim_det['max_prob']
 
+                    template['faulty_min_prob'] = faulty_sim_det['min_prob']
+                    template['golden_min_prob'] = golden_sim_det['min_prob']
+
                     template['faulty_skw_prob'] = faulty_sim_det['skw_prob']
                     template['golden_skw_prob'] = golden_sim_det['skw_prob']
+
+                    template['faulty_kur_prob'] = faulty_sim_det['kur_prob']
+                    template['golden_kur_prob'] = golden_sim_det['kur_prob']
+
 
                     writer.writerow(template)
                     f.flush()
@@ -534,9 +590,11 @@ def main(args):
     bins=5
     bin_labels = [_+1 for _ in range(bins)]
     data['Complexity bin'] = pd.cut(data['Complexity'], bins=bins, labels=bin_labels)
+
+    root_root = '/'.join(args.fsim_log.split('/')[-2:])
     
     if not os.path.exists(f"map_tool_box/AirSimNNaviFI/analysis/l{args.target_lyr}"):
-        os.mkdir(f"map_tool_box/AirSimNNaviFI/analysis/l{args.target_lyr}")
+        os.mkdir(f"{root_root}/map_tool_box/AirSimNNaviFI/analysis/l{args.target_lyr}")
 
     data[(data['golden_termination']=='Goal')].groupby(['ber', 'Complexity bin'])[['MPD (m)', 'TDI (%)']].mean().reset_index().to_csv(f'map_tool_box/AirSimNNaviFI/analysis/l{args.target_lyr}/manh_success_complexity.csv')
     data.groupby(['ber', 'Complexity bin'])[['MPD (m)', 'TDI (%)']].mean().reset_index().to_csv(f'map_tool_box/AirSimNNaviFI/analysis/l{args.target_lyr}/Path_deviation.csv')

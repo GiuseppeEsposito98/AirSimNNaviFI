@@ -20,6 +20,40 @@ import torch
 from pytorchfi.FI_Weights import FI_manager
 from copy import deepcopy
 
+
+ELLIPSE_CACHE = {}
+
+DEPTH_SHAPE = (144, 256)
+SCALING_FACTORS = [0.01, 0.02, 0.04, 0.05, 0.06, 0.08,
+                   0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+def precompute_ellipses(depth_shape, scaling_factors, thickness=2):
+    h, w = depth_shape
+    cx, cy = w // 2, h // 2
+
+    y, x = np.ogrid[:h, :w]
+
+    ellipse_map = {}
+
+    for sf in scaling_factors:
+        a = int(sf * w)
+        b = int(sf * h)
+
+        # Evita divisioni per zero
+        if a <= thickness or b <= thickness:
+            continue
+
+        outer = ((x - cx)**2 / a**2 + (y - cy)**2 / b**2) <= 1
+        inner = ((x - cx)**2 / (a - thickness)**2 +
+                 (y - cy)**2 / (b - thickness)**2) <= 1
+
+        ellipse_border = outer & (~inner)
+
+        ellipse_map[sf] = (ellipse_border, inner)
+
+    return ellipse_map
+
+
 def get_argparse():
     parser = argparse.ArgumentParser(description='DQN configuration')
     parser.add_argument('--fsim_config', help='Fault simulation configuration json file path')
@@ -29,6 +63,7 @@ def get_argparse():
     parser.add_argument('--hardening', default=None, required=False, help='Name of the hardening Technique to implement')
     parser.add_argument('--paths_number', default=5, help='Number of paths to evaluate on (if not specified will evaluate on 5 paths per difficulty level)')
     parser.add_argument('--difficulties', default=None, help='Difficulty levels as a list (if not specified will evaluate on representative difficulty levels)')
+    parser.add_argument('--sam', default=False, help='Analyze input complexity')
     return parser
 
 def main(args):
@@ -62,6 +97,7 @@ def main(args):
     environment = Environment.Episodic(data_map, spawner, actor, observer, terminators, others)
 
     if fsim_config:
+        sam_model = SAM(os.path.join(model_path, "/home/gesposito/map_tool_box/sam_b.pt")) if bool(args.sam) else None
         with open(f'{fsim_config}', "r") as f:
             content = f.read()
             fsim_config=json.loads(content)
@@ -92,7 +128,7 @@ def main(args):
         os.makedirs(write_dir, exist_ok=True)
         write_file = 'evaluation__test.p'
         write_path = Path(write_dir, write_file)
-        accuracy, episodes = Control.eval(environment, model, write_path=write_path, save_observations=False, save_qvalues=False, run='Golden', FI_setup=FI_setup)
+        accuracy, episodes = Control.eval(environment, model, write_path=write_path, save_observations=False, save_qvalues=True, run='Golden', FI_setup=FI_setup, sam = sam)
         
         FI_setup.close_golden_results()
 
@@ -115,6 +151,16 @@ def main(args):
                                         layer=int(fsim_config['fault_info']['neurons_rand_single_layer']['layer']),
                                         bers = fsim_config['fault_info']['neurons_rand_single_layer']['bers'])
         
+        ELLIPSE_CACHE = precompute_ellipses(
+            depth_shape=DEPTH_SHAPE,
+            scaling_factors=SCALING_FACTORS,
+            thickness=2
+        )
+
+        sam_model = 
+
+
+        
         for fault, k in FI_setup.iter_fault_list():
             write_dir = f'F_{k}_results/'
             write_file = 'evaluation__test.p'
@@ -125,9 +171,12 @@ def main(args):
             FI_setup.FI_framework.bit_flip_err_neuron(fault)
             # print(FI_setup.FI_framework.faulty_model)
             # sys.exit()
-            accuracy, episodes = Control.eval(environment, model=FI_setup.FI_framework.faulty_model, write_path=write_path, save_observations=False, save_qvalues=False, fault=fault, FI_setup=FI_setup, run='Faulty')
+            accuracy, episodes = Control.eval(environment, model=FI_setup.FI_framework.faulty_model, write_path=write_path, save_observations=False, save_qvalues=True, fault=fault, FI_setup=FI_setup, run='Faulty', sam=sam_model, ellipse_cache=ELLIPSE_CACHE)
             
             FI_setup.parse_results()
+
+            # if k == 5:
+            #     break
 
 if __name__ == "__main__":
     # point to model you wish to evaluate

@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --time=02:00:00
-#SBATCH --nodes=2
-#SBATCH --partition=gpu_a40
+#SBATCH --time=01:00:00
+#SBATCH --nodes=1
+#SBATCH --partition=gpu_v100
 #SBATCH --gres=gpu
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
@@ -13,7 +13,7 @@
 source ~/miniconda3/bin/activate
 conda deactivate
 
-conda activate airnnfi
+conda activate yolo
 
 cd  ~
 
@@ -45,6 +45,7 @@ Sim_dir=${global_PWD}/${DIR}_${hardening}/JOBID${job_id}_N${lyr}/
      --target_layer $lyr \
      --trials $trials \
      --fsim_log_name ${Sim_dir} \
-     --hardening ${hardening}
+     --hardening ${hardening} \
+     --sam True
     
 # python ${global_PWD}/map_tool_box/AirSimNNaviFI/analysis/postprocess.py --fsim_log ${Sim_dir} --target_lyr ${lyr}

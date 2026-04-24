@@ -116,7 +116,7 @@ python3 -m pip install --upgrade stack-data==0.6.3
 python3 -m pip install --upgrade sympy==1.13.3
 python3 -m pip install --upgrade terminado==0.18.1
 python3 -m pip install --upgrade tinycss2==1.3.0
-python3 -m pip install --upgrade torch==2.4.1
+python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 python3 -m pip install --upgrade tornado==6.4.1
 python3 -m pip install --upgrade traitlets==5.14.3
 python3 -m pip install --upgrade triton==3.0.0
@@ -132,3 +132,5 @@ python3 -m pip install --upgrade websocket-client==1.8.0
 python3 -m pip install --upgrade wheel==0.44.0
 python3 -m pip install --upgrade widgetsnbextension==4.0.13
 python3 -m pip install --upgrade tqdm
+python3 -m pip install --upgrade scikit-learn
+python3 -m pip install --upgrade ultralytics

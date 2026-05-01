@@ -9,12 +9,42 @@ import pickle
 import numpy as np
 import argparse
 import json
+from map_tool_box.AirSimNNaviFI.analysis import input_complexity as ic
+from map_tool_box.modules import Data_Map
 
 ELLIPSE_CACHE = {}
 
 DEPTH_SHAPE = (144, 256)
 SCALING_FACTORS = [0.01, 0.02, 0.04, 0.05, 0.06, 0.08,
                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+
+def precompute_ellipses(depth_shape, scaling_factors, thickness=2):
+    h, w = depth_shape
+    cx, cy = w // 2, h // 2
+
+    y, x = np.ogrid[:h, :w]
+
+    ellipse_map = {}
+
+    for sf in scaling_factors:
+        a = int(sf * w)
+        b = int(sf * h)
+
+        # Evita divisioni per zero
+        if a <= thickness or b <= thickness:
+            continue
+
+        outer = ((x - cx)**2 / a**2 + (y - cy)**2 / b**2) <= 1
+        inner = ((x - cx)**2 / (a - thickness)**2 +
+                 (y - cy)**2 / (b - thickness)**2) <= 1
+
+        ellipse_border = outer & (~inner)
+
+        ellipse_map[sf] = (ellipse_border, inner)
+
+    return ellipse_map
+
 
 # sam_model = SAM("sam_b.pt")
 
@@ -232,9 +262,15 @@ def evaluate_sim(sim, golden_path_length_per_ep_tot=None, golden_sim=None, fault
     return turns_original_per_ep, path_length_per_ep_x, path_length_per_ep_y, path_length_per_ep_tot, stops_per_ep, ca_act_per_ep, turns_pivot_per_ep, energy_per_ep
 
 def main(args):
-
+    ELLIPSE_CACHE = precompute_ellipses(
+        depth_shape=DEPTH_SHAPE,
+        scaling_factors=SCALING_FACTORS,
+        thickness=2
+    )
     rgb_sensor_name = 'SceneV1'
     depth_sensor_name = 'DepthV1'
+    map_name = 'AirSimNH'
+    data_map = Data_Map.DataMapRoof(map_name, memory_saver=True)
 
     root_path = f'{args.fsim_log}'
     file_name = 'evaluation__test.p'
@@ -268,6 +304,8 @@ def main(args):
                 'golden_energy',
                 'faulty_energy',
                 'agrees',
+                'golden_complexities',
+                'faulty_complexities',
                 'faulty_obs_mean',
                 'golden_obs_mean',
                 'faulty_obs_min',
@@ -347,6 +385,8 @@ def main(args):
                 'golden_energy': None,
                 'faulty_energy':None,
                 'agrees': None,
+                'golden_complexities': None,
+                'faulty_complexities': None,
                 'faulty_obs_mean': None,
                 'golden_obs_mean': None,
                 'faulty_obs_min': None,
@@ -438,21 +478,21 @@ def main(args):
                         try:
                             golden_point = golden_current_step_detail['point']
                             golden_depth_map = data_map.get_data_point(golden_point, depth_sensor_name)
-                            golden_img_stats = ic.assess_complexity(golden_depth_map, f_id=f'ep{episode_id}_step{golden_step}', ellipse_cache=ellipse_cache)
+                            golden_img_stats = ic.assess_complexity(golden_depth_map, f_id=f'ep{episode_id}_step{golden_step}', ellipse_cache=ELLIPSE_CACHE)
+                            golden_complexity = ic.compute_complexity(golden_img_stats)
                         except Exception as e:
-                            golden_img_stats = {'id': f'ep{episode_id}_step{golden_step}',
-                            'message': f'{e}'}
+                            golden_complexity = e
                         
                         try:
                             faulty_point = faulty_current_step_detail['point']
                             faulty_depth_map = data_map.get_data_point(faulty_point, depth_sensor_name)
-                            faulty_img_stats = ic.assess_complexity(faulty_depth_map, f_id=f'ep{episode_id}_step{faulty_step}', ellipse_cache=ellipse_cache)
+                            faulty_img_stats = ic.assess_complexity(faulty_depth_map, f_id=f'ep{episode_id}_step{faulty_step}', ellipse_cache=ELLIPSE_CACHE)
+                            faulty_complexity = ic.compute_complexity(faulty_img_stats)
                         except Exception as e:
-                            faulty_img_stats = {'id': f'ep{episode_id}_step{faulty_step}',
-                            'message': f'{e}'}
+                            faulty_complexity = e
 
-                        golden_complexities.append(golden_img_stats)
-                        faulty_complexities.append(faulty_img_stats)
+                        golden_complexities.append(golden_complexity)
+                        faulty_complexities.append(faulty_complexity)
 
                         agrees.append(agree)
 
@@ -503,6 +543,8 @@ def main(args):
                     template['faulty_path_length'] = faulty_path_length_per_ep_tot[episode_id]
 
                     template['agrees'] = agrees
+                    template['golden_complexities'] = golden_complexities
+                    template['faulty_complexities'] = faulty_complexities
 
                     template['faulty_obs_mean'] = faulty_sim_det['obs_mean']
                     template['golden_obs_mean'] = golden_sim_det['obs_mean']

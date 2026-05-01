@@ -133,4 +133,4 @@ python3 -m pip install --upgrade wheel==0.44.0
 python3 -m pip install --upgrade widgetsnbextension==4.0.13
 python3 -m pip install --upgrade tqdm
 python3 -m pip install --upgrade scikit-learn
-python3 -m pip install --upgrade ultralytics
+python3 -m pip install --upgrade opencv-python

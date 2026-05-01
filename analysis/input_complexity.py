@@ -81,6 +81,7 @@ def build_ellipse(depth, scaling_factor):
     ellipse_border = outer & (~inner)
     return ellipse_border, inner
 
+# counter = 0
 def assess_complexity(depth, f_id, ellipse_cache, sam_model=None):
     depth = depth[0,:,:]
     cwd = os.getcwd()
@@ -94,8 +95,10 @@ def assess_complexity(depth, f_id, ellipse_cache, sam_model=None):
 
     pixels = depth.reshape((-1, 1))
 
-
-    bandwidth = estimate_bandwidth(pixels, quantile=0.2, n_samples=5000).item()
+    try:
+        bandwidth = estimate_bandwidth(pixels, quantile=0.2, n_samples=5000).item()
+    except Exception as e:
+        bandwidth = 1.0
 
     # print("Estimated Bandwidth:", bandwidth)
 
@@ -128,7 +131,7 @@ def assess_complexity(depth, f_id, ellipse_cache, sam_model=None):
         }
 
     objects_distances = dict()
-    for scaling_factor in scaling_factors:
+    for scaling_factor in list(ellipse_cache.keys()):
 
         ellipse_border, inner = ellipse_cache[scaling_factor]
         
@@ -292,6 +295,26 @@ def main(args):
                     
                     counter += 1
 
+def compute_complexity(img_data):
+    complexity = 0
+    ellipsis_subset = img_data['ellipse_details']
+    min_complexity = 8765.018271506344
+    max_complexity = 4327251.791314707
+    for scaling_factor_str in ellipsis_subset.keys():
+        scaling_factor = float(scaling_factor_str.split('_')[1])
+        # print(ellipsis_subset[scaling_factor_str])
+        pixels_subset = ellipsis_subset[scaling_factor_str]['total_pixels']
+        
+        num_objects = len(ellipsis_subset[scaling_factor_str]['cluster_distances_mapping'].keys()) \
+            if len(ellipsis_subset[scaling_factor_str]['cluster_distances_mapping'].keys()) > 0 \
+                else 1
+        
+        distances = list(ellipsis_subset[scaling_factor_str]['cluster_distances_mapping'].values())
+        norm_distances = np.array(distances)/255
+        mean_distance = np.mean(norm_distances) if len(norm_distances) > 0 else 1
+        complexity += ((pixels_subset/num_objects) * (1/scaling_factor) * (1/mean_distance+1))
+    norm_complexity = (complexity - min_complexity)/(max_complexity-min_complexity)
+    return norm_complexity.item()
 
 if __name__ == '__main__':
 

@@ -19,7 +19,7 @@ import argparse
 import torch
 from pytorchfi.FI_Weights import FI_manager
 from copy import deepcopy
-from ultralytics import SAM
+# from ultralytics import SAM
 
 
 # ELLIPSE_CACHE = {}
@@ -28,31 +28,31 @@ from ultralytics import SAM
 # SCALING_FACTORS = [0.01, 0.02, 0.04, 0.05, 0.06, 0.08,
 #                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
-def precompute_ellipses(depth_shape, scaling_factors, thickness=2):
-    h, w = depth_shape
-    cx, cy = w // 2, h // 2
+# def precompute_ellipses(depth_shape, scaling_factors, thickness=2):
+#     h, w = depth_shape
+#     cx, cy = w // 2, h // 2
 
-    y, x = np.ogrid[:h, :w]
+#     y, x = np.ogrid[:h, :w]
 
-    ellipse_map = {}
+#     ellipse_map = {}
 
-    for sf in scaling_factors:
-        a = int(sf * w)
-        b = int(sf * h)
+#     for sf in scaling_factors:
+#         a = int(sf * w)
+#         b = int(sf * h)
 
-        # Evita divisioni per zero
-        if a <= thickness or b <= thickness:
-            continue
+#         # Evita divisioni per zero
+#         if a <= thickness or b <= thickness:
+#             continue
 
-        outer = ((x - cx)**2 / a**2 + (y - cy)**2 / b**2) <= 1
-        inner = ((x - cx)**2 / (a - thickness)**2 +
-                 (y - cy)**2 / (b - thickness)**2) <= 1
+#         outer = ((x - cx)**2 / a**2 + (y - cy)**2 / b**2) <= 1
+#         inner = ((x - cx)**2 / (a - thickness)**2 +
+#                  (y - cy)**2 / (b - thickness)**2) <= 1
 
-        ellipse_border = outer & (~inner)
+#         ellipse_border = outer & (~inner)
 
-        ellipse_map[sf] = (ellipse_border, inner)
+#         ellipse_map[sf] = (ellipse_border, inner)
 
-    return ellipse_map
+#     return ellipse_map
 
 
 def get_argparse():
@@ -123,11 +123,11 @@ def main(args):
             layer_indices=[int(target_layer)]
             model = implement_ranger(model_UT=model, layers = layer_indices, output_dir=backup_dir, map_name=map_name, model_name=model_name)
         
-        ELLIPSE_CACHE = precompute_ellipses(
-            depth_shape=DEPTH_SHAPE,
-            scaling_factors=SCALING_FACTORS,
-            thickness=2
-        )
+        # ELLIPSE_CACHE = precompute_ellipses(
+        #     depth_shape=DEPTH_SHAPE,
+        #     scaling_factors=SCALING_FACTORS,
+        #     thickness=2
+        # )
         
         # output results here
         write_dir = 'Golden_results/'

@@ -7,7 +7,7 @@ import os
 import sys
 import torch
 import scipy
-from map_tool_box.AirSimNNaviFI.Controller import input_complexity as ic
+# from map_tool_box.AirSimNNaviFI.Controller import input_complexity as ic
 
 SUCCESS_REASONS = ['Goal']
 def euclidean(p1, p2):

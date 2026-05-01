@@ -10,6 +10,14 @@ import numpy as np
 import argparse
 import json
 
+ELLIPSE_CACHE = {}
+
+DEPTH_SHAPE = (144, 256)
+SCALING_FACTORS = [0.01, 0.02, 0.04, 0.05, 0.06, 0.08,
+                   0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+# sam_model = SAM("sam_b.pt")
+
 def get_argparse():
     parser = argparse.ArgumentParser(description='DQN configuration')
     parser.add_argument('--fsim_log', help='Folder path to process')
@@ -225,6 +233,9 @@ def evaluate_sim(sim, golden_path_length_per_ep_tot=None, golden_sim=None, fault
 
 def main(args):
 
+    rgb_sensor_name = 'SceneV1'
+    depth_sensor_name = 'DepthV1'
+
     root_path = f'{args.fsim_log}'
     file_name = 'evaluation__test.p'
     idx = 0
@@ -394,6 +405,8 @@ def main(args):
                     longer_path = 'same'
                     
                     agrees = list()
+                    golden_complexities = list()
+                    faulty_complexities = list()
                     
                     for golden_step, faulty_step in zip_longest(range(len(golden_sim_det['actions'])), range(len(faulty_sim_det['actions'])), fillvalue='Not avail'):
                         
@@ -403,6 +416,7 @@ def main(args):
                             faulty_current_step_detail = faulty_sim[faulty_step+1]
                             longer_path = 'faulty'
                             agree = False
+                            golden_complexity = None
                             
 
                         # if the faulty path is shorter
@@ -411,6 +425,7 @@ def main(args):
                             golden_current_step_detail = golden_sim[golden_step+1]
                             longer_path = 'golden'
                             agree = False
+                            faulty_complexity = None
                         
                         else:
                             golden_current_step_detail = golden_sim[golden_step+1]
@@ -419,7 +434,26 @@ def main(args):
                             golden_last_step = deepcopy(golden_current_step_detail)
                             faulty_last_step = deepcopy(faulty_current_step_detail)
                             agree = golden_sim_det['actions'][golden_step] == faulty_sim_det['actions'][faulty_step]
+
+                        try:
+                            golden_point = golden_current_step_detail['point']
+                            golden_depth_map = data_map.get_data_point(golden_point, depth_sensor_name)
+                            golden_img_stats = ic.assess_complexity(golden_depth_map, f_id=f'ep{episode_id}_step{golden_step}', ellipse_cache=ellipse_cache)
+                        except Exception as e:
+                            golden_img_stats = {'id': f'ep{episode_id}_step{golden_step}',
+                            'message': f'{e}'}
                         
+                        try:
+                            faulty_point = faulty_current_step_detail['point']
+                            faulty_depth_map = data_map.get_data_point(faulty_point, depth_sensor_name)
+                            faulty_img_stats = ic.assess_complexity(faulty_depth_map, f_id=f'ep{episode_id}_step{faulty_step}', ellipse_cache=ellipse_cache)
+                        except Exception as e:
+                            faulty_img_stats = {'id': f'ep{episode_id}_step{faulty_step}',
+                            'message': f'{e}'}
+
+                        golden_complexities.append(golden_img_stats)
+                        faulty_complexities.append(faulty_img_stats)
+
                         agrees.append(agree)
 
                         # position in the faulty path

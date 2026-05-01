@@ -81,7 +81,7 @@ def build_ellipse(depth, scaling_factor):
     ellipse_border = outer & (~inner)
     return ellipse_border, inner
 
-def assess_complexity(depth, f_id, ellipse_cache, sam_model):
+def assess_complexity(depth, f_id, ellipse_cache, sam_model=None):
     depth = depth[0,:,:]
     cwd = os.getcwd()
     # point = environment.get_point()
@@ -115,7 +115,7 @@ def assess_complexity(depth, f_id, ellipse_cache, sam_model):
     depth_draw = depth.copy()
     clustered_draw = clustered.copy()
 
-    total_objects, masks = sam_based_count(rgb_image, sam_model)
+    # total_objects, masks = sam_based_count(rgb_image, sam_model)
 
     img_stats = {
             'id': f_id,
@@ -144,20 +144,20 @@ def assess_complexity(depth, f_id, ellipse_cache, sam_model):
         for cluster_id in unique_clusters:
             distances_per_ellipse[int(cluster_id)] = float(distance_mapping[cluster_id])
 
-        for i, mask in enumerate(masks):
-            # intersezione tra maschera oggetto e ellisse
-            mask = mask.cpu()
-            intersection = mask & inner
+        # for i, mask in enumerate(masks):
+        #     # intersezione tra maschera oggetto e ellisse
+        #     mask = mask.cpu()
+        #     intersection = mask & inner
 
-            # percentuale di overlap
-            overlap_ratio = intersection.sum() / (mask.sum() + 1e-8)
+        #     # percentuale di overlap
+        #     overlap_ratio = intersection.sum() / (mask.sum() + 1e-8)
 
-            # soglia per dire "oggetto dentro ellisse"
-            if overlap_ratio > 0:
-                if f'object_{i}' in objects_distances.keys():
-                    objects_distances[f'object_{i}'] += 1
-                else:
-                    objects_distances[f'object_{i}'] = 1
+        #     # soglia per dire "oggetto dentro ellisse"
+        #     if overlap_ratio > 0:
+        #         # if f'object_{i}' in objects_distances.keys():
+        #         #     objects_distances[f'object_{i}'] += 1
+        #         # else:
+        #         #     objects_distances[f'object_{i}'] = 1
 
         img_stats['ellipse_details'][f'scaling_{scaling_factor}'] = {
                 'total_pixels': len(labels_in_ellipse),

@@ -22,11 +22,11 @@ from copy import deepcopy
 from ultralytics import SAM
 
 
-ELLIPSE_CACHE = {}
+# ELLIPSE_CACHE = {}
 
-DEPTH_SHAPE = (144, 256)
-SCALING_FACTORS = [0.01, 0.02, 0.04, 0.05, 0.06, 0.08,
-                   0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+# DEPTH_SHAPE = (144, 256)
+# SCALING_FACTORS = [0.01, 0.02, 0.04, 0.05, 0.06, 0.08,
+#                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
 def precompute_ellipses(depth_shape, scaling_factors, thickness=2):
     h, w = depth_shape
@@ -98,7 +98,7 @@ def main(args):
     environment = Environment.Episodic(data_map, spawner, actor, observer, terminators, others)
 
     if fsim_config:
-        sam_model = SAM("sam_b.pt") if bool(args.sam) else None
+        # sam_model = SAM("sam_b.pt") if bool(args.sam) else None
         with open(f'{fsim_config}', "r") as f:
             content = f.read()
             fsim_config=json.loads(content)
@@ -134,7 +134,7 @@ def main(args):
         os.makedirs(write_dir, exist_ok=True)
         write_file = 'evaluation__test.p'
         write_path = Path(write_dir, write_file)
-        accuracy, episodes = Control.eval(environment, model, write_path=write_path, save_observations=False, save_qvalues=True, run='Golden', FI_setup=FI_setup, ellipse_cache=ELLIPSE_CACHE, sam = sam_model)
+        accuracy, episodes = Control.eval(environment, model, write_path=write_path, save_observations=False, save_qvalues=True, run='Golden', FI_setup=FI_setup)
         
         FI_setup.close_golden_results()
 
@@ -170,7 +170,7 @@ def main(args):
             FI_setup.FI_framework.bit_flip_err_neuron(fault)
             # print(FI_setup.FI_framework.faulty_model)
             # sys.exit()
-            accuracy, episodes = Control.eval(environment, model=FI_setup.FI_framework.faulty_model, write_path=write_path, save_observations=False, save_qvalues=True, fault=fault, FI_setup=FI_setup, run='Faulty', sam=sam_model, ellipse_cache=ELLIPSE_CACHE)
+            accuracy, episodes = Control.eval(environment, model=FI_setup.FI_framework.faulty_model, write_path=write_path, save_observations=False, save_qvalues=True, fault=fault, FI_setup=FI_setup, run='Faulty')
             
             FI_setup.parse_results()
 

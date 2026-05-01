@@ -56,12 +56,13 @@ def play_episode(environment, model, save_observations=False, save_qvalues=False
     
     counter = 0
 
-    if sam != None:
-        try:
-            img_stats = ic.assess_complexity(observations['img'], f_id=f'ep{episode}_step{counter}', ellipse_cache=ellipse_cache, sam = sam)
-        except:
-            img_stats = {'id': f'ep{episode}_step{counter}',
-            'message': 'failure'}
+    # if sam != None:
+    #     try:
+    #         img_stats = ic.assess_complexity(observations['img'], f_id=f'ep{episode}_step{counter}', ellipse_cache=ellipse_cache, sam_model = sam)
+    #     except Exception as e:
+    #         img_stats = {'id': f'ep{episode}_step{counter}',
+    #         'message': f'{e}'}
+    #     state['img_stats'] = img_stats
 
     states = [state]
     
@@ -88,13 +89,13 @@ def play_episode(environment, model, save_observations=False, save_qvalues=False
         if save_qvalues:
             state['q_values'] = q_values
         
-        if sam and counter != 0:
-            try:
-                img_stats = ic.assess_complexity(observations['img'], f_id=f'ep{episode}_step{counter}', ellipse_cache=ellipse_cache, sam = sam)
-            except:
-                img_stats = {'id': f'ep{episode}_step{counter}',
-                'message': 'failure'}
-            state['img_stats'] = img_stats
+        # if sam and counter != 0:
+        #     try:
+        #         img_stats = ic.assess_complexity(observations['img'], f_id=f'ep{episode}_step{counter}', ellipse_cache=ellipse_cache, sam_model = sam)
+        #     except Exception as e:
+        #         img_stats = {'id': f'ep{episode}_step{counter}',
+        #         'message': f'{e}'}
+        #     state['img_stats'] = img_stats
 
         probs = scipy.special.softmax(q_values)
         max_prob.append(float(np.max(probs)))

@@ -35,4 +35,4 @@ python3 ${global_PWD}/map_tool_box/AirSimNNaviFI/Fault_simulations/dqn_NBER_lyr.
     --sam True
 
    
-# python ${global_PWD}/map_tool_box/AirSimNNaviFI/analysis/postprocess.py --fsim_log ${Sim_dir} --target_lyr ${lyr}
+# python ${global_PWD}/map_tool_box/AirSimNNaviFI/analysis/postprocess.py --fsim_log ${Sim_dir} --target_lyr ${lyr} 

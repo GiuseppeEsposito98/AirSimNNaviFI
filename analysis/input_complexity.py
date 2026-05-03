@@ -96,14 +96,14 @@ def assess_complexity(depth, f_id, ellipse_cache, sam_model=None):
     pixels = depth.reshape((-1, 1))
 
     try:
-        bandwidth = estimate_bandwidth(pixels, quantile=0.2, n_samples=5000).item()
+        bandwidth = estimate_bandwidth(pixels, quantile=0.2, n_samples=5000, n_jobs=-1).item()
     except Exception as e:
         bandwidth = 1.0
 
     # print("Estimated Bandwidth:", bandwidth)
 
     # ---- MEAN SHIFT ----
-    ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
+    ms = MeanShift(bandwidth=bandwidth, bin_seeding=True, n_jobs=-1)
     labels = ms.fit_predict(pixels)
 
     clustered = labels.reshape(depth.shape)

@@ -270,7 +270,7 @@ def main(args):
     rgb_sensor_name = 'SceneV1'
     depth_sensor_name = 'DepthV1'
     map_name = 'AirSimNH'
-    data_map = Data_Map.DataMapRoof(map_name, memory_saver=True)
+    data_map = Data_Map.DataMapRoof(map_name, memory_saver=False)
 
     root_path = f'{args.fsim_log}'
     file_name = 'evaluation__test.p'
@@ -351,7 +351,7 @@ def main(args):
     data_sheet = pd.DataFrame()
 
     # Iterate over the available data
-    for folder in tqdm([file for file in os.listdir(root_path) if file.startswith('F_') and os.path.isdir(os.path.join(root_path, file))]):
+    for folder in tqdm([file for file in os.listdir(root_path) if file.startswith('F_') and os.path.isdir(os.path.join(root_path, file))], desc='Faults'):
 
         idx += 1
         folder_path = os.path.join(root_path, folder)
@@ -425,7 +425,7 @@ def main(args):
             with open(csv_file, mode='a', newline='') as f:
                 writer = csv.DictWriter(f, fieldnames=header)
 
-                for episode_id in range(len(faulty_data)):
+                for episode_id in tqdm(range(len(faulty_data)), desc='Episodes'):
                     faulty_sim = faulty_data[episode_id]
 
                     faulty_sim_det = faulty_data_det[f'ep{episode_id+1}']
@@ -506,6 +506,9 @@ def main(args):
                         euc_distance = euclidean(gp, fp)
 
                         euc_stats.append(euc_distance)
+
+                        if not agree:
+                            break
 
                     golden_termination = golden_data[episode_id][-1]['end']
                     faulty_termination = faulty_data[episode_id][-1]['end']

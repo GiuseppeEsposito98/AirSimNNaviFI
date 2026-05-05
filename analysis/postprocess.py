@@ -18,6 +18,19 @@ DEPTH_SHAPE = (144, 256)
 SCALING_FACTORS = [0.01, 0.02, 0.04, 0.05, 0.06, 0.08,
                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
+COMPLEXITY_CACHE = {}
+
+def get_complexity(point, ep, step, data_map, depth_sensor_name):
+    key = (point.x, point.y, point.z, point.direction)
+    if key not in COMPLEXITY_CACHE:
+        depth = data_map.get_data_point(point, depth_sensor_name)
+        stats = ic.assess_complexity(
+            depth, 
+            f_id=f'ep{ep}_step{step}',
+            ellipse_cache=ELLIPSE_CACHE
+        )
+        COMPLEXITY_CACHE[key] = ic.compute_complexity(stats)
+    return COMPLEXITY_CACHE[key]
 
 def precompute_ellipses(depth_shape, scaling_factors, thickness=2):
     h, w = depth_shape
@@ -267,6 +280,7 @@ def main(args):
         scaling_factors=SCALING_FACTORS,
         thickness=2
     )
+    
     rgb_sensor_name = 'SceneV1'
     depth_sensor_name = 'DepthV1'
     map_name = 'AirSimNH'
@@ -446,66 +460,76 @@ def main(args):
                     
                     agrees = list()
                     golden_complexities = list()
-                    faulty_complexities = list()
-                    
-                    for golden_step, faulty_step in zip_longest(range(len(golden_sim_det['actions'])), range(len(faulty_sim_det['actions'])), fillvalue='Not avail'):
+                    faulty_complexities = list() 
+                    max_len = max(len(golden_sim_det['actions']), len(faulty_sim_det['actions']))
+                    for step in range(max_len):
                         
                         # if the golden path is shorter
-                        if golden_step =='Not avail':
-                            golden_current_step_detail = deepcopy(golden_last_step)
-                            faulty_current_step_detail = faulty_sim[faulty_step+1]
-                            longer_path = 'faulty'
-                            agree = False
-                            golden_complexity = None
+                        # if golden_step =='Not avail':
+                        #     golden_current_step_detail = golden_last_step
+                        #     faulty_current_step_detail = faulty_sim[faulty_step+1]
+                        #     longer_path = 'faulty'
+                        #     agree = False
+                        #     golden_complexity = None
                             
 
-                        # if the faulty path is shorter
-                        elif faulty_step == 'Not avail':
-                            faulty_current_step_detail = deepcopy(faulty_last_step)
-                            golden_current_step_detail = golden_sim[golden_step+1]
-                            longer_path = 'golden'
-                            agree = False
-                            faulty_complexity = None
+                        # # if the faulty path is shorter
+                        # elif faulty_step == 'Not avail':
+                        #     faulty_current_step_detail = faulty_last_step
+                        #     golden_current_step_detail = golden_sim[golden_step+1]
+                        #     longer_path = 'golden'
+                        #     agree = False
+                        #     faulty_complexity = None
                         
-                        else:
-                            golden_current_step_detail = golden_sim[golden_step+1]
-                            faulty_current_step_detail = faulty_sim[faulty_step+1]
-                                    
-                            golden_last_step = deepcopy(golden_current_step_detail)
-                            faulty_last_step = deepcopy(faulty_current_step_detail)
-                            agree = golden_sim_det['actions'][golden_step] == faulty_sim_det['actions'][faulty_step]
+                        # else:
+                        golden_current_step_detail = golden_sim[step+1]
+                        faulty_current_step_detail = faulty_sim[step+1]
+                                
+                        golden_last_step = golden_current_step_detail
+                        faulty_last_step = faulty_current_step_detail
+                        agree = golden_sim_det['actions'][step] == faulty_sim_det['actions'][step]
 
-                        try:
-                            golden_point = golden_current_step_detail['point']
-                            golden_depth_map = data_map.get_data_point(golden_point, depth_sensor_name)
-                            golden_img_stats = ic.assess_complexity(golden_depth_map, f_id=f'ep{episode_id}_step{golden_step}', ellipse_cache=ELLIPSE_CACHE)
-                            golden_complexity = ic.compute_complexity(golden_img_stats)
-                        except Exception as e:
-                            golden_complexity = e
+                        # try:
+                        golden_point = golden_current_step_detail['point']
+                        # TODO: capisci se golden_point è sempre lo stesso
+                        print('GOLDEN: ')
+                        print(golden_point.x)
+                        print(golden_point.y)
+                        print(golden_point.z)
+                        print(golden_point.direction)
+                        golden_complexity = get_complexity(golden_point, episode_id, step, data_map, depth_sensor_name)
+                        # except Exception as e:
+                        #     golden_complexity = e
                         
-                        try:
-                            faulty_point = faulty_current_step_detail['point']
-                            faulty_depth_map = data_map.get_data_point(faulty_point, depth_sensor_name)
-                            faulty_img_stats = ic.assess_complexity(faulty_depth_map, f_id=f'ep{episode_id}_step{faulty_step}', ellipse_cache=ELLIPSE_CACHE)
-                            faulty_complexity = ic.compute_complexity(faulty_img_stats)
-                        except Exception as e:
-                            faulty_complexity = e
+                        # try:
+                        faulty_point = faulty_current_step_detail['point']
+                        # TODO: capisci se faulty_point è sempre lo stesso
+                        print('FAULTY: ')
+                        print(golden_point.x)
+                        print(faulty_point.y)
+                        print(faulty_point.z)
+                        print(faulty_point.direction)
+                        if step==5:
+                            sys.exit()
+                        faulty_complexity = get_complexity(faulty_point, episode_id, step, data_map, depth_sensor_name)
+                        # except Exception as e:
+                        #     faulty_complexity = e
 
                         golden_complexities.append(golden_complexity)
                         faulty_complexities.append(faulty_complexity)
 
                         agrees.append(agree)
 
-                        # position in the faulty path
-                        fp = (faulty_current_step_detail['point'].x, faulty_current_step_detail['point'].y, faulty_current_step_detail['point'].z)
+                        # # position in the faulty path
+                        # fp = (faulty_current_step_detail['point'].x, faulty_current_step_detail['point'].y, faulty_current_step_detail['point'].z)
 
-                        # position in the golden path
-                        gp = (golden_current_step_detail['point'].x, golden_current_step_detail['point'].y, golden_current_step_detail['point'].z)
+                        # # position in the golden path
+                        # gp = (golden_current_step_detail['point'].x, golden_current_step_detail['point'].y, golden_current_step_detail['point'].z)
 
-                        # compute step-wise distances
-                        euc_distance = euclidean(gp, fp)
+                        # # compute step-wise distances
+                        # euc_distance = euclidean(gp, fp)
 
-                        euc_stats.append(euc_distance)
+                        # euc_stats.append(euc_distance)
 
                         if not agree:
                             break
@@ -514,11 +538,11 @@ def main(args):
                     faulty_termination = faulty_data[episode_id][-1]['end']
 
 
-                    # compute average, min and max per episode
-                    max_euc = max(euc_stats)
-                    avg_euc = sum(euc_stats)/len(euc_stats)
-                    min_euc = min(euc_stats)
-                    tot_euc = sum(euc_stats)
+                    # # compute average, min and max per episode
+                    # max_euc = max(euc_stats)
+                    # avg_euc = sum(euc_stats)/len(euc_stats)
+                    # min_euc = min(euc_stats)
+                    # tot_euc = sum(euc_stats)
                     
                     # save info
                     template['golden_number_of_turns'] = golden_turns_per_ep[episode_id]
@@ -530,10 +554,10 @@ def main(args):
                     template['golden_termination'] = golden_termination
                     template['faulty_termination'] = faulty_termination
 
-                    template['step_wise_euclidean_max']=max_euc
-                    template['step_wise_euclidean_avg']=avg_euc
-                    template['step_wise_euclidean_min']=min_euc
-                    template['step_wise_euclidean_tot']=tot_euc
+                    # template['step_wise_euclidean_max']=max_euc
+                    # template['step_wise_euclidean_avg']=avg_euc
+                    # template['step_wise_euclidean_min']=min_euc
+                    # template['step_wise_euclidean_tot']=tot_euc
 
                     template['faulty_steps'] = len(faulty_sim)
                     template['episode_id'] = episode_id

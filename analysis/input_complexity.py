@@ -96,14 +96,14 @@ def assess_complexity(depth, f_id, ellipse_cache, sam_model=None):
     pixels = depth.reshape((-1, 1))
 
     try:
-        bandwidth = estimate_bandwidth(pixels, quantile=0.2, n_samples=5000, n_jobs=-1).item()
+        bandwidth = estimate_bandwidth(pixels, quantile=0.2, n_samples=5000, n_jobs=8).item()
     except Exception as e:
         bandwidth = 1.0
 
     # print("Estimated Bandwidth:", bandwidth)
 
     # ---- MEAN SHIFT ----
-    ms = MeanShift(bandwidth=bandwidth, bin_seeding=True, n_jobs=-1)
+    ms = MeanShift(bandwidth=bandwidth, bin_seeding=True, n_jobs=8)
     labels = ms.fit_predict(pixels)
 
     clustered = labels.reshape(depth.shape)
@@ -168,6 +168,15 @@ def assess_complexity(depth, f_id, ellipse_cache, sam_model=None):
                 'cluster_distances_mapping': distances_per_ellipse,
                 # 'objects_count': objects_distances
             }
+        
+        if random.random() < 0.001:
+            fig, ax = plt.subplots(1,2, figsize=(12,5))
+            ax[0].set_title("Original Depth image")
+            ax[0].imshow(depth_draw, cmap='viridis')
+
+            ax[1].set_title("Mean Shift segmentation")
+            ax[1].imshow(clustered_draw, cmap='viridis')
+            plt.savefig(os.path.join(cwd, f"{f_id}.png"))
     
     return img_stats
 
@@ -314,7 +323,7 @@ def compute_complexity(img_data):
         mean_distance = np.mean(norm_distances) if len(norm_distances) > 0 else 1
         complexity += ((pixels_subset/num_objects) * (1/scaling_factor) * (1/mean_distance+1))
     norm_complexity = (complexity - min_complexity)/(max_complexity-min_complexity)
-    return norm_complexity.item()
+    return norm_complexity
 
 if __name__ == '__main__':
 
